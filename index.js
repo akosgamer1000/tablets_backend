@@ -92,6 +92,44 @@ app.delete('/tablets/:id', (req, res) => {
         res.json({ message: 'Tablet deleted successfully' });
     });
 });
+app.get('/tablet', async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    try {
+
+        const countResult = await new Promise((resolve, reject) => {
+            db.query('SELECT COUNT(*) as total FROM products', (error, results) => {
+                if (error) return reject(error);
+                resolve(results);
+            });
+        });
+
+        const total = countResult[0].total;
+
+
+        const temp = await new Promise((resolve, reject) => {
+            db.query('SELECT * FROM products LIMIT ? OFFSET ?', [limit, offset], (error, results) => {
+                if (error) return reject(error);
+                resolve(results);
+            });
+        });
+
+        const rows = temp;
+
+
+        res.status(200).json({
+            data: rows,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+        });
+
+    } catch (error) {
+        console.error(`Error retrieving tablet: ${error}`);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
 // POST /tablets - Add a new tablet
 app.post('/tablets', (req, res) => {
     const tablet = req.body;
